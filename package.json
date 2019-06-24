@@ -1,0 +1,23 @@
+{
+  "name": "node-starter-template",
+  "version": "0.0.1",
+  "description": "A starting point for Node.js express apps with TypeScript and mySql",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc && npm run lint",
+    "clean": "rimraf ./dist",
+    "lint": "tslint -c tslint.json 'src/**/*.ts'",
+    "tsc": "tsc",
+    "test": "mocha -r ts-node/register src/**/*.spec.ts"
+  },
+  "author": "zoz.zozm@gmail.com",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^12.0.10",
+    "rimraf": "^2.6.3",
+    "ts-node": "^8.3.0",
+    "tslint": "^5.18.0",
+    "typescript": "^3.5.2",
+    "typescript-eslint-parser": "^22.0.0"
+  }
+}
