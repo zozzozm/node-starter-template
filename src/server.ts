@@ -2,14 +2,15 @@
 /*
   Import modules
   */
-import bodyParser from "body-parser";
+import bodyParser, { json } from "body-parser";
 import cors from "cors";
 import * as dotenv from "dotenv";
 import express from "express";
 import http from "http";
 import https from "https";
 import path from "path";
-
+import * as winston from "winston";
+import { appSettings} from "./config/appSettings";
 import appRouter = require("./routes/appRouter");
 import restRouter = require("./routes/restRouter");
 
@@ -23,7 +24,7 @@ export default class ScooterApp {
 
     public port: any;
     private app: any; // express server
-    constructor(private portGiven: any) {
+    constructor(portGiven: any) {
         this.port = portGiven;
     }
 
@@ -33,7 +34,23 @@ export default class ScooterApp {
      */
     public startServer() {
         // start the express server(s)
+        this.initWinston();
         this.initExpress();
+    }
+
+    /**
+     * This Initilatizes the winston
+     * @method initWinston @private
+     */
+    private initWinston() {
+        // Create the logger
+        const config = process.env.NODE_ENV === "prod" ? appSettings.winston.prod : appSettings.winston.dev;
+        winston.remove(winston.transports.Console);
+        winston.add(winston.createLogger( config ));
+        process.on("uncaughtException", (err) => winston.error("uncaught exception: ", err));
+        process.on("unhandledRejection", (reason, p) => winston.error("unhandled rejection: ", reason, p));
+
+        winston.info("Winston has been init");
     }
 
     /**
@@ -62,11 +79,23 @@ export default class ScooterApp {
         // add in any routes you might want
         this.initAppRoutes();
 
+        this.app.use((err: any, req: any, res: any, next: any) => {
+
+            const msg = `${req.ip} | ${req.method} | ${req.protocol}://${req.host}${req.path}
+             | body: ${JSON.stringify(req.body)}
+             | stack: ${err.stack}`;
+            winston.error(msg);
+            res.status(err.status || 500);
+            // render the error page
+            if (process.env.NODE_ENV === "prod") {
+                res.render("exception", { title: "500 | Exception" });
+            }
+            next(err);
+          });
+
         // and start!
-        if (process.env.NODE_ENV === "dev") {
-            http.createServer(this.app).listen(3000);
-            console.info("Express started on (http://localhost:" + this.port + "/)");
-        }
+        http.createServer(this.app).listen(this.port);
+        winston.info("Express started on (http://localhost:" + this.port + "/)");
     }
 
     /**

@@ -2,7 +2,7 @@
   "name": "node-starter-template",
   "version": "0.0.1",
   "description": "A starting point for Node.js express apps with TypeScript and mySql",
-  "main": "index.js", 
+  "main": "index.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/zozzozm/node-starter-template"
@@ -10,7 +10,7 @@
   "scripts": {
     "build": "npm run clean && gulp",
     "clean": "rimraf ./dist",
-    "dev": "nodemon --watch 'src/**/*.ts' --ignore 'src/**/*.spec.ts' --exec ts-node 'src/app.ts'",
+    "dev": "nodemon --watch src/**/*.ts --ignore src/**/*.spec.ts --exec ts-node src/app.ts",
     "lint": "tslint -c tslint.json 'src/**/*.ts'",
     "start": "npm run build && node ./dist/app.js",
     "tsc": "tsc",
@@ -41,6 +41,8 @@
     "cors": "^2.8.5",
     "dotenv": "^8.0.0",
     "express": "^4.17.1",
-    "pug": "^2.0.4"
+    "pug": "^2.0.4",
+    "winston": "^3.2.1",
+    "winston-daily-rotate-file": "^3.9.0"
   }
 }

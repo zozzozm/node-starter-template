@@ -1,5 +1,6 @@
 import bodyParser = require("body-parser");
 import * as express from "express";
+import * as winston from "winston";
 const router = express.Router();
 
 router.get("/items", (req, res) => {
