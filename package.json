@@ -43,6 +43,6 @@
     "express": "^4.17.1",
     "pug": "^2.0.4",
     "winston": "^3.2.1",
-    "winston-daily-rotate-file": "^3.9.0"
+    "winston-daily-rotate-file": "^4.4.1"
   }
 }
