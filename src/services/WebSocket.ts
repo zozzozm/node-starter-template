@@ -13,8 +13,11 @@ export default class LocalSocketio {
             console.log("connection count is: " + ++this.connectCounter);
             socket.on("subscribe", (message: any) => {
                 const msg: Subscribe = JSON.parse(message);
-                msg.params.forEach((i) => { socket.join(this.binanceMaper(i)); });
-                console.log("client subscribed to: " + msg.params.length + " coins");
+                msg.params.forEach((i) => {
+                    // console.log("client subscribed to: " + this.binanceMaper(i) + " events");
+                    socket.join(this.binanceMaper(i));
+                });
+                console.log("client subscribed to: " + msg.params.length + " events");
                 this.updateCoreCoin(msg.params);
             });
 
@@ -23,7 +26,7 @@ export default class LocalSocketio {
                 msg.params.forEach((i) => {
                     socket.leave(this.binanceMaper(i));
                 });
-                console.log("client unsubscribed to: " + msg.params.length + " coins");
+                console.log("client unsubscribed to: " + msg.params.length + " events");
                 this.updateCoreCoin(msg.params);
             });
         });
@@ -60,7 +63,7 @@ export default class LocalSocketio {
             case "depth20":
             case "depth10":
             case "depth5":
-                SelType = "depthUpdate";
+                SelType = "depth20@1000ms";
                 break;
             default:
                 SelType = splitted[1];

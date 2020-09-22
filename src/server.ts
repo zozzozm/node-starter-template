@@ -26,6 +26,7 @@ dotenv.config();
  */
 export default class TradeBroker {
 
+    public static ws: WebSocket[] = [];
     public static needUpdateSubscribtion = false;
     public static types = [
         "ticker", "aggTrade", // "depth", // "trade", // depth20@1000ms
@@ -149,9 +150,12 @@ export default class TradeBroker {
         wsAggTrade.onopen = () => { this.subscribeToAll(wsAggTrade, "aggTrade"); };
         wsAggTrade.onmessage = (data: any) => {
             const obj = JSON.parse(data.data);
+            // console.error(obj.s+ "@aggTrade ");
             this.SocketServer.emitToSubscriber(obj.s + "@aggTrade", obj);
         };
         wsAggTrade.onerror = (data) => { console.error("@aggTrade " + data.message); };
+
+        this.depthSocket();
 
 
 
@@ -201,7 +205,7 @@ export default class TradeBroker {
             path: "/ws",
             pingInterval: 10000000,
             pingTimeout: 5000,
-          });
+        });
         this.SocketServer.init(this.io);
     }
 
@@ -218,7 +222,30 @@ export default class TradeBroker {
     private subscribeToAll(ws: any, type: string) {
         // console.log(`subscibed to ${TradeBroker.coins.length} coins`);
         ws.send(JSON.stringify(new Subscribe(this.GenerateAllStreams(type))));
-        // console.log(JSON.stringify(new Subscribe(this.GenerateAllStreams())));
+        // console.log(JSON.stringify(new Subscribe(this.GenerateAllStreams(type))));
+    }
+
+    private depthSocket() {
+        TradeBroker.coins.forEach((coin, index) => {
+            const socket = new WebSocket(url);
+            socket.onopen = () => {
+                // console.log("onopen " + JSON.stringify(new Subscribe([coin + "@depth20@1000ms"], index)));
+                socket.send(JSON.stringify(new Subscribe([coin + "@depth20@1000ms"], index)));
+            };
+            socket.onmessage = (data: any) => {
+                // console.log("onmessage " + coin.toUpperCase() + "@depth20@1000ms ");
+                const obj = JSON.parse(data.data);
+                this.SocketServer.emitToSubscriber(coin.toUpperCase() + "@depth20@1000ms", obj);
+            };
+            socket.onerror = (data) => { console.error("@depth20@1000ms " + data.message); };
+            TradeBroker.ws.push(socket);
+            this.delay(10);
+
+        });
+    }
+
+    private delay(ms: number) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
     }
 
 }
