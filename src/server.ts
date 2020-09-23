@@ -28,9 +28,13 @@ export default class TradeBroker {
 
     public static ws: WebSocket[] = [];
     public static needUpdateSubscribtion = false;
-    public static types = [
-        "ticker", "aggTrade", // "depth", // "trade", // depth20@1000ms
-    ];
+    // public static types = [
+    //     "ticker", "aggTrade", // "depth", // "trade", // depth20@1000ms
+    // ];
+
+    // public static extra = [
+    //     "!miniTicker@arr@3000ms",
+    // ];
 
     public static coins = [
         "btcusdt", "bchbtc", "ethbtc", "xrpbtc", "trxbtc", "ltcbtc", "bnbbtc", "linkbtc",
@@ -59,9 +63,7 @@ export default class TradeBroker {
         "audusdt", "dotusdt", "bzrxusdt", "wingusdt", "lskusdt", "gtousdt",
     ];
 
-    public static extra = [
-        "!miniTicker@arr@3000ms",
-    ];
+
 
     public port: any;
     public SocketServer = new LocalSocketio();
@@ -199,11 +201,9 @@ export default class TradeBroker {
      * @returns {void}
      */
     private initWebSocket(server: any): void {
-        // whenever a user connects on port 3000 via
-        // a websocket, log that a user has connected
         this.io = socketio(server, {
             path: "/ws",
-            pingInterval: 10000000,
+            pingInterval: 10000, // 10000000
             pingTimeout: 5000,
         });
         this.SocketServer.init(this.io);
@@ -228,12 +228,8 @@ export default class TradeBroker {
     private depthSocket() {
         TradeBroker.coins.forEach((coin, index) => {
             const socket = new WebSocket(url);
-            socket.onopen = () => {
-                // console.log("onopen " + JSON.stringify(new Subscribe([coin + "@depth20@1000ms"], index)));
-                socket.send(JSON.stringify(new Subscribe([coin + "@depth20@1000ms"], index)));
-            };
+            socket.onopen = () => { socket.send(JSON.stringify(new Subscribe([coin + "@depth20@1000ms"], index))); };
             socket.onmessage = (data: any) => {
-                // console.log("onmessage " + coin.toUpperCase() + "@depth20@1000ms ");
                 const obj = JSON.parse(data.data);
                 this.SocketServer.emitToSubscriber(coin.toUpperCase() + "@depth20@1000ms", obj);
             };

@@ -9,35 +9,49 @@ export default class LocalSocketio {
 
     public init(io: SocketIO.Server) {
         this.io = io;
-        io.on("connection", async (socket: SocketIO.Socket) => {
+        this.io.on("connection", async (socket: SocketIO.Socket) => {
             console.log("connection count is: " + ++this.connectCounter);
             socket.on("subscribe", (message: any) => {
-                const msg: Subscribe = JSON.parse(message);
-                msg.params.forEach((i) => {
-                    // console.log("client subscribed to: " + this.binanceMaper(i) + " events");
-                    socket.join(this.binanceMaper(i));
-                });
-                console.log("client subscribed to: " + msg.params.length + " events");
-                this.updateCoreCoin(msg.params);
+                try {
+                    const msg: Subscribe = JSON.parse(message);
+                    msg.params.forEach((i) => { socket.join(this.binanceMaper(i)); });
+                    socket.emit("", JSON.stringify({ result: null, id: msg.id }));
+                    console.log("client subscribed to: " + msg.params.length + " events");
+                    this.updateCoreCoin(msg.params);
+                } catch (error) {
+                    socket.emit(JSON.stringify({ result: "error", id: message.id ? message.id : 0 }));
+                }
+
             });
 
             socket.on("unsubscribe", (message: any) => {
-                const msg: Subscribe = JSON.parse(message);
-                msg.params.forEach((i) => {
-                    socket.leave(this.binanceMaper(i));
-                });
-                console.log("client unsubscribed to: " + msg.params.length + " events");
-                this.updateCoreCoin(msg.params);
+                try {
+                    const msg: Subscribe = JSON.parse(message);
+                    msg.params.forEach((i) => { socket.leave(this.binanceMaper(i)); });
+                    socket.emit("", JSON.stringify({ result: null, id: msg.id }));
+                    console.log("client unsubscribed to: " + msg.params.length + " events");
+                    this.updateCoreCoin(msg.params);
+                } catch (error) {
+                    socket.emit(JSON.stringify({ result: "error", id: message.id ? message.id : 0 }));
+                }
+            });
+
+            socket.on("disconnect", () => {
+                console.log("disconnect. connection count is: " + --this.connectCounter);
             });
         });
 
-        io.on("disconnect", (socket: SocketIO.Socket) => {
-            console.log("connection count is: " + --this.connectCounter);
+        this.io.on("disconnect", (socket: SocketIO.Socket) => {
+            console.log("disconnect. connection count is: " + --this.connectCounter);
         });
 
-        io.on("message", (msg: any) => {
+        this.io.on("message", (msg: any) => {
             console.log("connection rec is: " + msg);
         });
+
+        this.io.on("error", () => {
+            console.log("error. connection count is: " + --this.connectCounter);
+          });
     }
 
     public emitToSubscriber(topic: string, msg: string) {
