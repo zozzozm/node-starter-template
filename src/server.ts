@@ -16,7 +16,7 @@ import { appSettings } from "./config/appSettings";
 import { Subscribe } from "./model/Binance";
 import appRouter = require("./routes/appRouter");
 import restRouter = require("./routes/restRouter");
-import LocalSocketio from "./services/WebSocket";
+import LocalSocketio from "./services/LocalSocketio";
 const url = "wss://stream.binance.com:9443/ws";
 dotenv.config();
 
@@ -28,13 +28,6 @@ export default class TradeBroker {
 
     public static ws: WebSocket[] = [];
     public static needUpdateSubscribtion = false;
-    // public static types = [
-    //     "ticker", "aggTrade", // "depth", // "trade", // depth20@1000ms
-    // ];
-
-    // public static extra = [
-    //     "!miniTicker@arr@3000ms",
-    // ];
 
     public static coins = [
         "btcusdt", "bchbtc", "ethbtc", "xrpbtc", "trxbtc", "ltcbtc", "bnbbtc", "linkbtc",
@@ -138,44 +131,15 @@ export default class TradeBroker {
             next(err);
         });
 
-
-        const wsTicker = new WebSocket(url);
-        wsTicker.onopen = () => { this.subscribeToAll(wsTicker, "ticker"); };
-        wsTicker.onmessage = (data: any) => {
-            const obj = JSON.parse(data.data);
-            this.SocketServer.emitToSubscriber(obj.s + "@24hrTicker", obj);
-        };
-        wsTicker.onerror = (data) => { console.error("@24hrTicker " + data.message); };
-
-
-        const wsAggTrade = new WebSocket(url);
-        wsAggTrade.onopen = () => { this.subscribeToAll(wsAggTrade, "aggTrade"); };
-        wsAggTrade.onmessage = (data: any) => {
-            const obj = JSON.parse(data.data);
-            // console.error(obj.s+ "@aggTrade ");
-            this.SocketServer.emitToSubscriber(obj.s + "@aggTrade", obj);
-        };
-        wsAggTrade.onerror = (data) => { console.error("@aggTrade " + data.message); };
-
+        this.subscribeCoins("ticker", "@24hrTicker");
+        this.subscribeCoins("aggTrade", "@aggTrade");
         this.depthSocket();
 
-
-
         // and start!
-        if (process.env.NODE_ENV === "dev") {
-            // start websocket
-            this.initWebSocket(http.createServer(this.app).listen(this.port));
-            winston.info("Express started on (http://localhost:" + this.port + "/)");
+        // start websocket
+        this.initWebSocket(http.createServer(this.app).listen(this.port));
+        winston.info("Express started on (http://localhost:" + this.port + "/)");
 
-        } else {
-            // const sslkey = fs.readFileSync(process.env.SSL_KEY || "", "utf8");
-            // const sslcert = fs.readFileSync(process.env.SSL_CERT || "", "utf8");
-            // const ca = fs.readFileSync(process.env.SSL_CHAIN || "", "utf8");
-            // const options = { key: sslkey, cert: sslcert, ca: ca };
-
-            // this.initWebSocket(https.createServer(options, this.app).listen(this.port));
-            // winston.info("Express started on (https://localhost:" + this.port + "/)");
-        }
     }
 
     /**
@@ -211,32 +175,49 @@ export default class TradeBroker {
 
     private GenerateAllStreams(type: string) {
         const all: string[] = [];
-
-        TradeBroker.coins.forEach((i) => {
-            all.push(i + "@" + type);
-        });
-
+        TradeBroker.coins.forEach((i) => { all.push(i + "@" + type); });
         return all;
     }
 
     private subscribeToAll(ws: any, type: string) {
-        // console.log(`subscibed to ${TradeBroker.coins.length} coins`);
         ws.send(JSON.stringify(new Subscribe(this.GenerateAllStreams(type))));
-        // console.log(JSON.stringify(new Subscribe(this.GenerateAllStreams(type))));
+    }
+
+
+    private subscribeCoins(topics: string, responseTopic: string, allCoin: boolean = true) {
+        const ws = new WebSocket(url);
+        ws.onopen = () => {
+            console.error(topics + " opened");
+            if (allCoin) {
+                this.subscribeToAll(ws, topics);
+            } else {
+                ws.send(JSON.stringify(new Subscribe([topics])));
+            }
+        };
+        ws.onmessage = (data: any) => {
+            const obj = JSON.parse(data.data);
+            if (allCoin) {
+                this.SocketServer.emitToSubscriber(obj.s + responseTopic, obj);
+            } else {
+                this.SocketServer.emitToSubscriber(responseTopic, obj);
+            }
+        };
+        ws.onerror = (data) => { console.error("error on: " + topics + "  " + data.message); };
+        ws.onclose = () => {
+            console.error(topics + " closed");
+            setTimeout(() => {
+                console.error(topics + " reconnecting ...");
+                this.subscribeCoins(topics, responseTopic, allCoin);
+            }, 1000);
+        };
+        TradeBroker.ws.push(ws);
     }
 
     private depthSocket() {
-        TradeBroker.coins.forEach((coin, index) => {
-            const socket = new WebSocket(url);
-            socket.onopen = () => { socket.send(JSON.stringify(new Subscribe([coin + "@depth20@1000ms"], index))); };
-            socket.onmessage = (data: any) => {
-                const obj = JSON.parse(data.data);
-                this.SocketServer.emitToSubscriber(coin.toUpperCase() + "@depth20@1000ms", obj);
-            };
-            socket.onerror = (data) => { console.error("@depth20@1000ms " + data.message); };
-            TradeBroker.ws.push(socket);
-            this.delay(10);
-
+        const reqTopic = "@depth20@1000ms";
+        TradeBroker.coins.forEach(async (coin) => {
+            this.subscribeCoins(coin + reqTopic, coin.toUpperCase() + reqTopic, false);
+            await this.delay(10);
         });
     }
 

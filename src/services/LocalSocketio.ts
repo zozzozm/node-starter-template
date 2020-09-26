@@ -1,5 +1,5 @@
+import { Subscribe } from "../model/Binance";
 import TradeBroker from "../server";
-import { Subscribe } from "./../model/Binance";
 
 export default class LocalSocketio {
 
