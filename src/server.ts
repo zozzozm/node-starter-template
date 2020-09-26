@@ -7,8 +7,6 @@ import cors from "cors";
 import * as dotenv from "dotenv";
 import express from "express";
 import http from "http";
-import https from "https";
-import path from "path";
 import socketio from "socket.io";
 import * as winston from "winston";
 import WebSocket from "ws";

@@ -1,0 +1,37 @@
+version: '3'
+services:
+  socketio:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: server
+    container_name: server
+    restart: always
+    command: node app.js
+    volumes:
+      - /home/logs:/home/logs
+    ports:
+      - 3000:3000
+    environment:
+      - NODE_ENV=prod
+      - SERVER_PORT=3000
+      - LOG_PATH=/home/logs
+    networks:
+      - app-network   
+  nginx: 
+    image: nginx:1.19.2-alpine
+    container_name: nginx
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - /data/letsencrypt/:/data/letsencrypt/
+      - /etc/letsencrypt/live/coinlocaly.com-0001/fullchain.pem:/ssl/fullchain.pem
+      - /etc/letsencrypt/live/coinlocaly.com-0001/privkey.pem:/ssl/privkey.pem
+      - /etc/letsencrypt/live/coinlocaly.com-0001/chain.pem:/ssl/chain.pem
+    networks:
+      - app-network
+networks:
+  app-network:
+    driver: bridge
