@@ -56,8 +56,6 @@ export default class TradeBroker {
         "audusdt", "dotusdt", "bzrxusdt", "wingusdt", "lskusdt", "gtousdt",
     ];
 
-
-
     public port: any;
     public SocketServer = new LocalSocketio();
     public io!: SocketIO.Server;
@@ -100,22 +98,22 @@ export default class TradeBroker {
         this.app = express();
         this.initCORS();
 
-        // view engine setup
-        this.app.set("views", path.join(__dirname, "views"));
-        this.app.set("view engine", "pug");
+        // // view engine setup
+        // this.app.set("views", path.join(__dirname, "views"));
+        // this.app.set("view engine", "pug");
 
-        this.app.use(express.static(path.join(__dirname, "public")));
+        // this.app.use(express.static(path.join(__dirname, "public")));
 
-        // parse application/x-www-form-urlencoded
-        this.app.use(bodyParser.urlencoded({ extended: false }));
+        // // parse application/x-www-form-urlencoded
+        // this.app.use(bodyParser.urlencoded({ extended: false }));
 
-        // parse application/json
-        this.app.use(bodyParser.json());
-        // parse text
-        this.app.use(bodyParser.text());
+        // // parse application/json
+        // this.app.use(bodyParser.json());
+        // // parse text
+        // this.app.use(bodyParser.text());
 
-        // add in any routes you might want
-        this.initAppRoutes();
+        // // add in any routes you might want
+        // this.initAppRoutes();
 
         this.app.use((err: any, req: any, res: any, next: any) => {
 
@@ -167,7 +165,7 @@ export default class TradeBroker {
     private initWebSocket(server: any): void {
         this.io = socketio(server, {
             path: "/ws",
-            pingInterval: 10000, // 10000000
+            pingInterval: 20000,
             pingTimeout: 5000,
         });
         this.SocketServer.init(this.io);
@@ -198,8 +196,8 @@ export default class TradeBroker {
             const obj = JSON.parse(data.data);
             if (allCoin) {
                 this.SocketServer.emitToSubscriber(obj.s + responseTopic, obj);
-            } else {
-                this.SocketServer.emitToSubscriber(responseTopic, obj);
+            } else { 
+                this.SocketServer.emitToSubscriber(responseTopic, obj); 
             }
         };
         ws.onerror = (data) => { console.error("error on: " + topics + "  " + data.message); };
@@ -208,7 +206,7 @@ export default class TradeBroker {
             setTimeout(() => {
                 console.error(topics + " reconnecting ...");
                 this.subscribeCoins(topics, responseTopic, allCoin);
-            }, 1000);
+            }, 2000);
         };
         TradeBroker.ws.push(ws);
     }
