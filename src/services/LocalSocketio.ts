@@ -115,7 +115,7 @@ export default class LocalSocketio {
             if (!this.coinIsExist(coin)) {
                 this.addCoin(coin);
                 needUpdateFlag = true;
-                console.log("add :" + coin);
+                this.log("new coin added :" + coin);
             }
         });
     }

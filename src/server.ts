@@ -9,7 +9,7 @@ import express from "express";
 import http from "http";
 import socketio from "socket.io";
 import * as winston from "winston";
-import WebSocket from "ws";
+import WebSocket = require("ws");
 import { appSettings } from "./config/appSettings";
 import { Subscribe } from "./model/Binance";
 import appRouter = require("./routes/appRouter");
@@ -127,8 +127,8 @@ export default class TradeBroker {
             next(err);
         });
 
-        TradeBroker.ws.push(this.subscribeCoins(new WebSocket(url), "ticker", "@24hrTicker"));
-        TradeBroker.ws.push(this.subscribeCoins(new WebSocket(url), "aggTrade", "@aggTrade"));
+        this.subscribeCoins(0, new WebSocket(url), "ticker", "@24hrTicker");
+        this.subscribeCoins(1, new WebSocket(url), "aggTrade", "@aggTrade");
         this.depthSocket(TradeBroker.coins);
         this.updateNewCoin();
 
@@ -184,7 +184,9 @@ export default class TradeBroker {
         ws.send(JSON.stringify(new Subscribe(this.GenerateAllStreams(type))));
     }
 
-    private subscribeCoins(ws: WebSocket, topics: string, responseTopic: string, allCoin: boolean = true) {
+    private subscribeCoins(index: number, ws: WebSocket, topics: string,
+                           responseTopic: string, allCoin: boolean = true) {
+
         ws.onopen = () => {
             console.error(topics + " opened");
             if (allCoin) {
@@ -206,17 +208,17 @@ export default class TradeBroker {
             console.error(topics + " closed");
             setTimeout(() => {
                 console.error(topics + " reconnecting ...");
-                this.subscribeCoins(ws, topics, responseTopic, allCoin);
+                this.subscribeCoins(index, new WebSocket(url), topics, responseTopic, allCoin);
             }, 2000);
         };
-        return ws;
+        TradeBroker.ws[index] = ws;
     }
 
-    private depthSocket(coins: string[]) {
+    private depthSocket(coins: string[], offset: number = 0) {
         const reqTopic = "@depth20@1000ms";
-        coins.forEach(async (coin) => {
-            const t = new WebSocket(url);
-            TradeBroker.ws.push(this.subscribeCoins(t, coin + reqTopic, coin.toUpperCase() + reqTopic, false));
+        coins.forEach(async (coin, index) => {
+            const ws = new WebSocket(url);
+            this.subscribeCoins(index + offset, ws, coin + reqTopic, coin.toUpperCase() + reqTopic, false);
             await this.delay(10);
         });
     }
@@ -226,7 +228,7 @@ export default class TradeBroker {
             if (TradeBroker.newCoins.length > 0) {
                 TradeBroker.ws[0].send(JSON.stringify(new Subscribe(TradeBroker.newCoins))); // subscribe to ticker
                 TradeBroker.ws[1].send(JSON.stringify(new Subscribe(TradeBroker.newCoins))); // subscribe to aggtrade
-                this.depthSocket(TradeBroker.newCoins);
+                this.depthSocket(TradeBroker.newCoins, TradeBroker.coins.length);
                 TradeBroker.coins.push(...TradeBroker.newCoins);
                 TradeBroker.newCoins = [];
             }
