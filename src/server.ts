@@ -25,9 +25,9 @@ dotenv.config();
 export default class TradeBroker {
 
     public static ws: WebSocket[] = [];
-    public static needUpdateSubscribtion = false;
 
-    public static coins = [
+    public static newCoins: string[] = [];
+    public static coins: string[] = [
         "btcusdt", "bchbtc", "ethbtc", "xrpbtc", "trxbtc", "ltcbtc", "bnbbtc", "linkbtc",
         "zrxbtc", "xlmbtc", "adabtc", "sandbtc", "kmdbtc", "eosbtc", "yfibtc", "lendbtc",
         "iotabtc", "zecbtc", "omgbtc", "batbtc", "algobtc", "renbtc", "paxbtc", "antbtc",
@@ -127,14 +127,19 @@ export default class TradeBroker {
             next(err);
         });
 
-        this.subscribeCoins("ticker", "@24hrTicker");
-        this.subscribeCoins("aggTrade", "@aggTrade");
-        this.depthSocket();
+        TradeBroker.ws.push(this.subscribeCoins(new WebSocket(url), "ticker", "@24hrTicker"));
+        TradeBroker.ws.push(this.subscribeCoins(new WebSocket(url), "aggTrade", "@aggTrade"));
+        this.depthSocket(TradeBroker.coins);
+        this.updateNewCoin();
 
         // and start!
         // start websocket
         this.initWebSocket(http.createServer(this.app).listen(this.port));
         winston.info("Express started on (http://localhost:" + this.port + "/)");
+
+        setInterval(() => {
+            this.SocketServer.log("we have " + TradeBroker.ws.length + " connection to binannce");
+        }, 10000);
 
     }
 
@@ -179,9 +184,7 @@ export default class TradeBroker {
         ws.send(JSON.stringify(new Subscribe(this.GenerateAllStreams(type))));
     }
 
-
-    private subscribeCoins(topics: string, responseTopic: string, allCoin: boolean = true) {
-        const ws = new WebSocket(url);
+    private subscribeCoins(ws: WebSocket, topics: string, responseTopic: string, allCoin: boolean = true) {
         ws.onopen = () => {
             console.error(topics + " opened");
             if (allCoin) {
@@ -194,8 +197,8 @@ export default class TradeBroker {
             const obj = JSON.parse(data.data);
             if (allCoin) {
                 this.SocketServer.emitToSubscriber(obj.s + responseTopic, obj);
-            } else { 
-                this.SocketServer.emitToSubscriber(responseTopic, obj); 
+            } else {
+                this.SocketServer.emitToSubscriber(responseTopic, obj);
             }
         };
         ws.onerror = (data) => { console.error("error on: " + topics + "  " + data.message); };
@@ -203,18 +206,31 @@ export default class TradeBroker {
             console.error(topics + " closed");
             setTimeout(() => {
                 console.error(topics + " reconnecting ...");
-                this.subscribeCoins(topics, responseTopic, allCoin);
+                this.subscribeCoins(ws, topics, responseTopic, allCoin);
             }, 2000);
         };
-        TradeBroker.ws.push(ws);
+        return ws;
     }
 
-    private depthSocket() {
+    private depthSocket(coins: string[]) {
         const reqTopic = "@depth20@1000ms";
-        TradeBroker.coins.forEach(async (coin) => {
-            this.subscribeCoins(coin + reqTopic, coin.toUpperCase() + reqTopic, false);
+        coins.forEach(async (coin) => {
+            const t = new WebSocket(url);
+            TradeBroker.ws.push(this.subscribeCoins(t, coin + reqTopic, coin.toUpperCase() + reqTopic, false));
             await this.delay(10);
         });
+    }
+
+    private updateNewCoin() {
+        setInterval(() => {
+            if (TradeBroker.newCoins.length > 0) {
+                TradeBroker.ws[0].send(JSON.stringify(new Subscribe(TradeBroker.newCoins))); // subscribe to ticker
+                TradeBroker.ws[1].send(JSON.stringify(new Subscribe(TradeBroker.newCoins))); // subscribe to aggtrade
+                this.depthSocket(TradeBroker.newCoins);
+                TradeBroker.coins.push(...TradeBroker.newCoins);
+                TradeBroker.newCoins = [];
+            }
+        }, 10000);
     }
 
     private delay(ms: number) {

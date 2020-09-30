@@ -4,19 +4,21 @@ import TradeBroker from "../server";
 export default class LocalSocketio {
 
     private connectCounter = 0;
+    private logTopic = "logd0c053";
 
     private io!: SocketIO.Server;
 
     public init(io: SocketIO.Server) {
         this.io = io;
         this.io.on("connection", async (socket: SocketIO.Socket) => {
-            console.log("connection count is: " + ++this.connectCounter);
+            this.log("connection count is: " + ++this.connectCounter);
+
             socket.on("subscribe", (message: any) => {
                 try {
                     const msg: Subscribe = JSON.parse(message);
                     msg.params.forEach((i) => { socket.join(this.binanceMaper(i)); });
-                    socket.emit("", JSON.stringify({ result: null, id: msg.id }));
-                    console.log("client subscribed to: " + msg.params.length + " events");
+                    socket.emit(JSON.stringify({ result: null, id: msg.id }));
+                    this.log("client subscribed to: " + msg.params.length + " events");
                     this.updateCoreCoin(msg.params);
                 } catch (error) {
                     socket.emit(JSON.stringify({ result: "error", id: message.id ? message.id : 0 }));
@@ -29,29 +31,39 @@ export default class LocalSocketio {
                     const msg: Subscribe = JSON.parse(message);
                     msg.params.forEach((i) => { socket.leave(this.binanceMaper(i)); });
                     socket.emit("", JSON.stringify({ result: null, id: msg.id }));
-                    console.log("client unsubscribed to: " + msg.params.length + " events");
+                    this.log("client unsubscribed to: " + msg.params.length + " events");
                     this.updateCoreCoin(msg.params);
                 } catch (error) {
                     socket.emit(JSON.stringify({ result: "error", id: message.id ? message.id : 0 }));
                 }
             });
 
-            socket.on("disconnect", () => {
-                console.log("disconnect. connection count is: " + --this.connectCounter);
+            socket.on(this.logTopic, () => {
+                let count = 0;
+                if (this.io.sockets.adapter.rooms[this.logTopic]) {
+                    count = this.io.sockets.adapter.rooms[this.logTopic].length;
+                }
+                socket.join(this.logTopic);
+                this.log(`log room have ${++count} member now`);
             });
+
+            socket.on("disconnect", () => {
+                this.log("disconnect. connection count is: " + --this.connectCounter);
+            });
+
         });
 
-        this.io.on("disconnect", (socket: SocketIO.Socket) => {
-            console.log("disconnect. connection count is: " + --this.connectCounter);
-        });
+        // this.io.on("disconnect", (socket: SocketIO.Socket) => {
+        //     console.log("disconnect. connection count is: " + --this.connectCounter);
+        // });
 
-        this.io.on("message", (msg: any) => {
-            console.log("connection rec is: " + msg);
-        });
+        // this.io.on("message", (msg: any) => {
+        //     console.log("connection rec is: " + msg);
+        // });
 
-        this.io.on("error", () => {
-            console.log("error. connection count is: " + --this.connectCounter);
-          });
+        // this.io.on("error", () => {
+        //     console.log("error. connection count is: " + --this.connectCounter);
+        // });
     }
 
     public emitToSubscriber(topic: string, msg: string) {
@@ -64,6 +76,16 @@ export default class LocalSocketio {
 
     public emitToAll(msg: string) {
         this.io.to("all").emit(msg);
+    }
+
+    public emitToLog(msg: string) {
+        this.io.to(this.logTopic).emit(msg);
+    }
+
+    public log(msg: string) {
+        const message = new Date().toLocaleString() + " - " + msg;
+        console.log(message);
+        this.emitToLog(message);
     }
 
     public binanceMaper(type: string) {
@@ -93,12 +115,9 @@ export default class LocalSocketio {
             if (!this.coinIsExist(coin)) {
                 this.addCoin(coin);
                 needUpdateFlag = true;
-                // console.log("add :" + coin);
+                console.log("add :" + coin);
             }
         });
-        if (needUpdateFlag) {
-            this.updateSubscribtion();
-        }
     }
 
     private coinIsExist(coin: string) {
@@ -106,10 +125,7 @@ export default class LocalSocketio {
     }
 
     private addCoin(coin: string) {
-        return TradeBroker.coins.push(coin);
+        return TradeBroker.newCoins.push(coin);
     }
 
-    private updateSubscribtion() {
-        // TradeBroker.needUpdateSubscribtion = true;
-    }
 }
