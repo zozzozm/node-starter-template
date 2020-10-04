@@ -7,6 +7,7 @@ import cors from "cors";
 import * as dotenv from "dotenv";
 import express from "express";
 import http from "http";
+import path = require("path");
 import socketio from "socket.io";
 import * as winston from "winston";
 import WebSocket = require("ws");
@@ -96,22 +97,22 @@ export default class TradeBroker {
         this.app = express();
         this.initCORS();
 
-        // // view engine setup
-        // this.app.set("views", path.join(__dirname, "views"));
-        // this.app.set("view engine", "pug");
+        // view engine setup
+        this.app.set("views", path.join(__dirname, "views"));
+        this.app.set("view engine", "pug");
 
-        // this.app.use(express.static(path.join(__dirname, "public")));
+        this.app.use(express.static(path.join(__dirname, "public")));
 
-        // // parse application/x-www-form-urlencoded
-        // this.app.use(bodyParser.urlencoded({ extended: false }));
+        // parse application/x-www-form-urlencoded
+        this.app.use(bodyParser.urlencoded({ extended: false }));
 
-        // // parse application/json
-        // this.app.use(bodyParser.json());
-        // // parse text
-        // this.app.use(bodyParser.text());
+        // parse application/json
+        this.app.use(bodyParser.json());
+        // parse text
+        this.app.use(bodyParser.text());
 
-        // // add in any routes you might want
-        // this.initAppRoutes();
+        // add in any routes you might want
+        this.initAppRoutes();
 
         this.app.use((err: any, req: any, res: any, next: any) => {
 

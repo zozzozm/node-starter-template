@@ -15,6 +15,7 @@ services:
     environment:
       - NODE_ENV=prod
       - SERVER_PORT=3000
+      - API_BASE='/api/'
       - LOG_PATH=/home/logs
     networks:
       - app-network   
