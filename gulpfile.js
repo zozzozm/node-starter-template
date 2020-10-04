@@ -11,6 +11,9 @@ gulp.task("build", () => {
 
     gulp.src(["src/views/**/*"])
         .pipe(gulp.dest("dist/views"));
+    
+    gulp.src(["src/public/**/*"])
+        .pipe(gulp.dest("dist/public"));
         
     return tsProject.src()
         .pipe(sourcemaps.init())

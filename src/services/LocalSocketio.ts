@@ -11,7 +11,7 @@ export default class LocalSocketio {
     public init(io: SocketIO.Server) {
         this.io = io;
         this.io.on("connection", async (socket: SocketIO.Socket) => {
-            this.log("connection count is: " + ++this.connectCounter);
+            this.log("connection count is: " + ++this.connectCounter + " with  ip:" + socket.handshake.address);
 
             socket.on("subscribe", (message: any) => {
                 try {

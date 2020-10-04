@@ -1,0 +1,24 @@
+body {
+  height: 90vh;
+  width: 100%;
+}
+
+.row {
+  margin: 0.5rem;
+}
+
+a {
+  color: #00B7FF;
+}
+
+.container {
+  width: 90%;
+  margin: 1rem;
+  margin-top: 2rem;
+}
+.colored-bg {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  background: linear-gradient(to bottom, #6e529d 0%,#d97b93 100%);
+}
