@@ -11,8 +11,7 @@ export default class LocalSocketio {
     public init(io: SocketIO.Server) {
         this.io = io;
         this.io.on("connection", async (socket: SocketIO.Socket) => {
-            this.log("connection count is: " + ++this.connectCounter + " with  ip:" + socket.handshake.address);
-
+            this.log("connection count is: " + ++this.connectCounter + " with  new ip:" + socket.handshake.address);
             socket.on("subscribe", (message: any) => {
                 try {
                     const msg: Subscribe = JSON.parse(message);
@@ -44,7 +43,7 @@ export default class LocalSocketio {
                     count = this.io.sockets.adapter.rooms[this.logTopic].length;
                 }
                 socket.join(this.logTopic);
-                this.log(`log room have ${++count} member now`);
+                this.log(`log room have ${++count} member and  room have ${this.connectCounter - count} now`);
             });
 
             socket.on("disconnect", () => {
@@ -84,8 +83,8 @@ export default class LocalSocketio {
 
     public log(msg: string) {
         const message = new Date().toLocaleString() + " - " + msg;
-        console.log(message);
-        this.emitToLog(message);
+        console.log("- CLIENT - " + message);
+        this.emitToLog("- CLIENT - " + message);
     }
 
     public binanceMaper(type: string) {

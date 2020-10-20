@@ -189,7 +189,7 @@ export default class TradeBroker {
                            responseTopic: string, allCoin: boolean = true) {
 
         ws.onopen = () => {
-            console.error(topics + " opened");
+            this.log(topics + " opened");
             if (allCoin) {
                 this.subscribeToAll(ws, topics);
             } else {
@@ -204,11 +204,11 @@ export default class TradeBroker {
                 this.SocketServer.emitToSubscriber(responseTopic, obj);
             }
         };
-        ws.onerror = (data) => { console.error("error on: " + topics + "  " + data.message); };
+        ws.onerror = (data) => { this.log("error on: " + topics + "  " + data.message); };
         ws.onclose = () => {
-            console.error(topics + " closed");
+            this.log(topics + " closed");
             setTimeout(() => {
-                console.error(topics + " reconnecting ...");
+                this.log(topics + " reconnecting ...");
                 this.subscribeCoins(index, new WebSocket(url), topics, responseTopic, allCoin);
             }, 2000);
         };
@@ -240,4 +240,9 @@ export default class TradeBroker {
         return new Promise((resolve) => setTimeout(resolve, ms));
     }
 
+    private log(msg: string) {
+        const message = new Date().toLocaleString() + " - " + msg;
+        console.log("- BNANCE - " + message);
+        this.SocketServer.emitToLog("- BINANCE - " + message);
+    }
 }
