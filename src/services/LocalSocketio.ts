@@ -111,16 +111,20 @@ export default class LocalSocketio {
         let needUpdateFlag = false;
         msg.forEach((i) => {
             const coin = i.split("@", 1)[0];
-            if (!this.coinIsExist(coin)) {
+            if (!this.coinIsExist(coin) && !this.newCoinIsExist(coin)) {
                 this.addCoin(coin);
                 needUpdateFlag = true;
-                this.log("new coin added :" + coin);
+                this.log("new coin added: " + coin);
             }
         });
     }
 
     private coinIsExist(coin: string) {
         return TradeBroker.coins.findIndex((x) => coin === x) >= 0 ? true : false;
+    }
+
+    private newCoinIsExist(coin: string) {
+        return TradeBroker.newCoins.findIndex((x) => coin === x) >= 0 ? true : false;
     }
 
     private addCoin(coin: string) {

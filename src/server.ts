@@ -130,7 +130,7 @@ export default class TradeBroker {
 
         this.subscribeCoins(0, new WebSocket(url), "ticker", "@24hrTicker");
         this.subscribeCoins(1, new WebSocket(url), "aggTrade", "@aggTrade");
-        this.depthSocket(TradeBroker.coins);
+        this.depthSocket(TradeBroker.coins, 2);
         this.updateNewCoin();
 
         // and start!
@@ -139,7 +139,7 @@ export default class TradeBroker {
         winston.info("Express started on (http://localhost:" + this.port + "/)");
 
         setInterval(() => {
-            this.SocketServer.log("we have " + TradeBroker.ws.length + " connection to binannce");
+            this.SocketServer.log("we have " + (TradeBroker.ws.length) + " connection to binannce");
         }, 10000);
 
     }
@@ -175,9 +175,9 @@ export default class TradeBroker {
         this.SocketServer.init(this.io);
     }
 
-    private GenerateAllStreams(type: string) {
+    private GenerateAllStreams(type: string, coins: string[] = TradeBroker.coins) {
         const all: string[] = [];
-        TradeBroker.coins.forEach((i) => { all.push(i + "@" + type); });
+        coins.forEach((i) => { all.push(i + "@" + type); });
         return all;
     }
 
@@ -186,7 +186,7 @@ export default class TradeBroker {
     }
 
     private subscribeCoins(index: number, ws: WebSocket, topics: string,
-                           responseTopic: string, allCoin: boolean = true) {
+        responseTopic: string, allCoin: boolean = true) {
 
         ws.onopen = () => {
             this.log(topics + " opened");
@@ -227,9 +227,9 @@ export default class TradeBroker {
     private updateNewCoin() {
         setInterval(() => {
             if (TradeBroker.newCoins.length > 0) {
-                TradeBroker.ws[0].send(JSON.stringify(new Subscribe(TradeBroker.newCoins))); // subscribe to ticker
-                TradeBroker.ws[1].send(JSON.stringify(new Subscribe(TradeBroker.newCoins))); // subscribe to aggtrade
-                this.depthSocket(TradeBroker.newCoins, TradeBroker.coins.length);
+                TradeBroker.ws[0].send(JSON.stringify(new Subscribe(this.GenerateAllStreams("ticker", TradeBroker.newCoins)))); // subscribe to ticker
+                TradeBroker.ws[1].send(JSON.stringify(new Subscribe(this.GenerateAllStreams("aggtrade", TradeBroker.newCoins)))); // subscribe to aggtrade
+                this.depthSocket(TradeBroker.newCoins, TradeBroker.ws.length);
                 TradeBroker.coins.push(...TradeBroker.newCoins);
                 TradeBroker.newCoins = [];
             }
