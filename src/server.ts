@@ -128,9 +128,11 @@ export default class TradeBroker {
             next(err);
         });
 
-        this.subscribeCoins(0, new WebSocket(url), "ticker", "@24hrTicker");
-        this.subscribeCoins(1, new WebSocket(url), "aggTrade", "@aggTrade");
-        this.depthSocket(TradeBroker.coins, 2);
+        this.subscribeCoins(TradeBroker.ws.length, new WebSocket(url), "ticker", "@24hrTicker");
+        this.subscribeCoins(TradeBroker.ws.length, new WebSocket(url), "aggTrade", "@aggTrade");
+        this.subscribeCoins(TradeBroker.ws.length, new WebSocket(url), "!miniTicker@arr@3000ms", "!miniTicker@arr@3000ms", false);
+        this.subscribeCoins(TradeBroker.ws.length, new WebSocket(url), "!miniTicker@arr@1000ms", "!miniTicker@arr@1000ms", false);
+        this.depthSocket(TradeBroker.coins, TradeBroker.ws.length);
         this.updateNewCoin();
 
         // and start!

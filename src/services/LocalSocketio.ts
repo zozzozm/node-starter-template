@@ -43,7 +43,7 @@ export default class LocalSocketio {
                     count = this.io.sockets.adapter.rooms[this.logTopic].length;
                 }
                 socket.join(this.logTopic);
-                this.log(`log room have ${++count} member and  room have ${this.connectCounter - count} now`);
+                this.log(`log room have ${++count} member and  customer room have ${this.connectCounter - count} now`);
             });
 
             socket.on("disconnect", () => {
@@ -88,30 +88,35 @@ export default class LocalSocketio {
     }
 
     public binanceMaper(type: string) {
-        const splitted = type.split("@", 2);
-        let SelType = splitted[1];
-        switch (splitted[1]) {
-            case "ticker":
-                SelType = "24hrTicker";
-                break;
-            case "depth":
-            case "depth20":
-            case "depth10":
-            case "depth5":
-                SelType = "depth20@1000ms";
-                break;
-            default:
-                SelType = splitted[1];
-                break;
+        if (type === "!miniTicker@arr@3000ms" || type === "!miniTicker@arr@1000ms") {
+            return type;
+        } else {
+            const splitted = type.split("@", 2);
+            let SelType = splitted[1];
+            switch (splitted[1]) {
+                case "ticker":
+                    SelType = "24hrTicker";
+                    break;
+                case "depth":
+                case "depth20":
+                case "depth10":
+                case "depth5":
+                    SelType = "depth20@1000ms";
+                    break;
+                default:
+                    SelType = splitted[1];
+                    break;
+            }
+            return splitted[0].toUpperCase() + "@" + SelType;
         }
-        return splitted[0].toUpperCase() + "@" + SelType;
+
     }
 
     private updateCoreCoin(msg: string[]) {
         let needUpdateFlag = false;
         msg.forEach((i) => {
             const coin = i.split("@", 1)[0];
-            if (!this.coinIsExist(coin) && !this.newCoinIsExist(coin)) {
+            if (!this.coinIsExist(coin) && !this.newCoinIsExist(coin) && coin !== "!miniTicker") {
                 this.addCoin(coin);
                 needUpdateFlag = true;
                 this.log("new coin added: " + coin);
