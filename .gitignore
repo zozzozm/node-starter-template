@@ -2,3 +2,4 @@
 /dist/
 src/debug.log
 *.zip
+src/services/debug.log
